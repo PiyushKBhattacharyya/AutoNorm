@@ -124,28 +124,6 @@ def load_pretrained_partial(model, checkpoint_path):
     model.load_state_dict(model_dict)
     print(f"Loaded {len(filtered_dict)}/{len(pretrained_dict)} parameters from {checkpoint_path}")
     
-
-def plot_attention_heads(attn_weights, save_path):
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    import os
-
-    if attn_weights is None:
-        print(f"[WARN] Attention weights not available. Skipping attention visualization.")
-        return
-
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    plt.figure(figsize=(15, 4))
-    for h in range(min(attn_weights.shape[1], 4)):
-        plt.subplot(1, 4, h + 1)
-        sns.heatmap(attn_weights[0, h].detach().cpu().numpy(), cmap="viridis")
-        plt.title(f"Head {h}")
-        plt.xlabel("Key")
-        plt.ylabel("Query")
-    plt.suptitle("Attention Maps")
-    plt.tight_layout()
-    plt.savefig(save_path)
-    plt.close()
     
 def add_noise_transform():
     return transforms.Compose([
