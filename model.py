@@ -10,14 +10,16 @@ class DyT(nn.Module):
     def forward(self, x):
         return x * self.alpha
 
+
 class ResidualMLPBlock(nn.Module):
     def __init__(self, dim):
         super().__init__()
         self.mlp = nn.Sequential(
             nn.Linear(dim, dim * 2),
             nn.GELU(),
+            nn.Dropout(0.3),
             nn.Linear(dim * 2, dim),
-            nn.Dropout(0.1),
+            nn.Dropout(0.3),
         )
         self.norm = nn.LayerNorm(dim)
 
@@ -25,7 +27,7 @@ class ResidualMLPBlock(nn.Module):
         return self.norm(x + self.mlp(x))
 
 class TransformerWithAutoNorm(nn.Module):
-    def __init__(self, input_dim=784, dim=128, depth=6, disable_selector=False, random_selector=False):
+    def __init__(self, input_dim=784, dim=128, depth=8, disable_selector=False, random_selector=False):
         super().__init__()
         self.linear1 = nn.Linear(input_dim, dim)
 
@@ -33,14 +35,24 @@ class TransformerWithAutoNorm(nn.Module):
         self.ln = nn.LayerNorm(dim)
         self.norm_selector = NormSelector(
             hidden_dim=dim,
-            disable_selector=False,
-            random_selector=False
+            disable_selector=disable_selector,
+            random_selector=random_selector
         )
 
         self.blocks = nn.Sequential(*[ResidualMLPBlock(dim) for _ in range(depth)])
-        self.out = nn.Linear(dim, 10)
 
-    def forward(self, x):
+        self.heads = nn.ModuleDict({
+            "MNIST": nn.Linear(dim, 10),
+            "CIFAR10": nn.Linear(dim, 10),
+            "CIFAR100": nn.Linear(dim, 100),  
+            "FashionMNIST": nn.Linear(dim, 10),
+            "CaliforniaHousing": nn.Linear(dim, 1),
+            "Diabetes": nn.Linear(dim, 1),
+            "BostonHousing": nn.Linear(dim, 1)
+        })
+
+    def forward(self, x, task):
+        # Flatten input
         x = x.view(x.size(0), -1)
         x = self.linear1(x)
 
@@ -49,7 +61,13 @@ class TransformerWithAutoNorm(nn.Module):
         x = self.norm_selector(x.unsqueeze(1), ln_out.unsqueeze(1), dyt_out.unsqueeze(1)).squeeze(1)
 
         x = self.blocks(x)
-        return self.out(x)
+
+        # Pick the correct head based on task name
+        if task not in self.heads:
+            raise ValueError(f"Task '{task}' not found in model heads. Available: {list(self.heads.keys())}")
+
+        return self.heads[task](x)
+
 
 class TeacherTransformer(nn.Module):
     def __init__(self, input_dim=784, dim=128):
@@ -61,7 +79,7 @@ class TeacherTransformer(nn.Module):
             nn.Linear(dim, 10)
         )
 
-    def forward(self, x):
+    def forward(self, x, task=None):
         x = x.view(x.size(0), -1)
         return self.net(x)
 
