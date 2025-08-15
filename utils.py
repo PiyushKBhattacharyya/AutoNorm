@@ -108,15 +108,15 @@ def plot_gradient_heatmap(grads, title, save_path):
     plt.close()
 
 # --- FLOPs + Latency ---
-def estimate_flops_and_latency(model, input_shape=(3, 32, 32), device='cpu'):
+def estimate_flops_and_latency(model, task, input_shape=(3, 32, 32), device='cpu'):
     model.eval()
     dummy_input = torch.randn(1, *input_shape).to(device)
-    flops, params = profile(model, inputs=(dummy_input,), verbose=False)
+    flops, params = profile(model, inputs=(dummy_input, task), verbose=False)
     torch.cuda.empty_cache()
     start = time.perf_counter()
     with torch.no_grad():
         for _ in range(100):
-            _ = model(dummy_input, "CIFAR10")  # Default head for benchmarking
+            _ = model(dummy_input, task)
     end = time.perf_counter()
     latency = (end - start) / 100
     return flops, latency

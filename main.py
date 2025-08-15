@@ -22,23 +22,25 @@ class ModelWithTaskWrapper(nn.Module):
         self.model = model
         self.task = task
 
-    def forward(self, x):
+    def forward(self, *args, **kwargs):
+        # Ignore passed task argument, always use self.task internally
+        # Assume first arg is input tensor
+        x = args[0]
+        # Forward with x and self.task
         return self.model(x, self.task)
-
 
 def main():
     os.makedirs(config['save_dir'], exist_ok=True)
 
     # --- Dataset Info ---
     datasets_info = {
-        "CaliforniaHousing": {"type": "regression", "pretrain": True},
-        "CIFAR100": {"type": "classification", "pretrain": True},
+        "MNIST": {"type": "classification", "finetune": True},
         "CIFAR10": {"type": "classification", "finetune": True},
-        "SVHN": {"type": "classification", "finetune": True},
         "FashionMNIST": {"type": "classification", "finetune": True},
-        "EnergyEfficiency": {"type": "regression", "finetune": True},
-        "ConcreteStrength": {"type": "regression", "finetune": True},
-        "AirfoilSelfNoise": {"type": "regression", "finetune": True}
+        "CIFAR100": {"type": "classification", "pretrain": True},
+        "SVHN": {"type": "classification", "finetune": True},
+        "CaliforniaHousing": {"type": "regression", "pretrain": True},
+        "EnergyEfficiency": {"type": "regression", "finetune": True}
     }
 
     classification_results = []
@@ -91,7 +93,8 @@ def main():
                 flops, latency = estimate_flops_and_latency(
                     wrapped_model,
                     input_shape=(train_loader.dataset[0][0].numel(),),
-                    device=config['device']
+                    device=config['device'],
+                    task=dataset_name
                 )
 
                 if meta["type"] == "classification":

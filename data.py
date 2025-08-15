@@ -109,17 +109,23 @@ def get_dataloaders(dataset_name, batch_size=64, custom_transform=None, root="./
         )
 
     elif dataset_name == "CIFAR10":
-        transform = transforms.Compose([
+        train_transform = transforms.Compose([
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
+        test_transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.5,), (0.5,))
         ])
         train_dataset = torchvision.datasets.CIFAR10(
             root=root, train=True, download=True,
-            transform=custom_transform or transform
+            transform=custom_transform or train_transform
         )
         test_dataset = torchvision.datasets.CIFAR10(
             root=root, train=False, download=True,
-            transform=custom_transform or transform
+            transform=custom_transform or test_transform
         )
 
     elif dataset_name == "FashionMNIST":
@@ -138,31 +144,43 @@ def get_dataloaders(dataset_name, batch_size=64, custom_transform=None, root="./
         )
 
     elif dataset_name == "CIFAR100":
-        transform = transforms.Compose([
+        train_transform = transforms.Compose([
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))
+        ])
+        test_transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.5071, 0.4867, 0.4408), (0.2675, 0.2565, 0.2761))
         ])
         train_dataset = torchvision.datasets.CIFAR100(
             root=root, train=True, download=True,
-            transform=custom_transform or transform
+            transform=custom_transform or train_transform
         )
         test_dataset = torchvision.datasets.CIFAR100(
             root=root, train=False, download=True,
-            transform=custom_transform or transform
+            transform=custom_transform or test_transform
         )
 
     elif dataset_name == "SVHN":
-        transform = transforms.Compose([
+        train_transform = transforms.Compose([
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))
+        ])
+        test_transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize((0.4377, 0.4438, 0.4728), (0.1980, 0.2010, 0.1970))
         ])
         train_dataset = torchvision.datasets.SVHN(
             root=root, split="train", download=True,
-            transform=custom_transform or transform
+            transform=custom_transform or train_transform
         )
         test_dataset = torchvision.datasets.SVHN(
             root=root, split="test", download=True,
-            transform=custom_transform or transform
+            transform=custom_transform or test_transform
         )
 
     # === Regression datasets ===
@@ -183,6 +201,6 @@ def get_dataloaders(dataset_name, batch_size=64, custom_transform=None, root="./
     else:
         raise ValueError(f"Unsupported dataset: {dataset_name}")
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=2)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
     return train_loader, test_loader

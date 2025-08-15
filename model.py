@@ -29,7 +29,7 @@ class ResidualMLPBlock(nn.Module):
 class TransformerWithAutoNorm(nn.Module):
     def __init__(self, input_dim=784, dim=128, depth=8, disable_selector=False, random_selector=False):
         super().__init__()
-        self.linear1 = nn.Linear(input_dim, dim)
+        self.linear1 = nn.LazyLinear(dim)
 
         self.dyt = DyT(dim)
         self.ln = nn.LayerNorm(dim)
@@ -44,12 +44,13 @@ class TransformerWithAutoNorm(nn.Module):
         self.heads = nn.ModuleDict({
             "MNIST": nn.Linear(dim, 10),
             "CIFAR10": nn.Linear(dim, 10),
-            "CIFAR100": nn.Linear(dim, 100),  
             "FashionMNIST": nn.Linear(dim, 10),
+            "CIFAR100": nn.Linear(dim, 100),
+            "SVHN": nn.Linear(dim, 10),
             "CaliforniaHousing": nn.Linear(dim, 1),
-            "Diabetes": nn.Linear(dim, 1),
-            "BostonHousing": nn.Linear(dim, 1)
+            "EnergyEfficiency": nn.Linear(dim, 2)
         })
+
 
     def forward(self, x, task):
         # Flatten input
@@ -73,7 +74,7 @@ class TeacherTransformer(nn.Module):
     def __init__(self, input_dim=784, dim=128):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_dim, dim),
+            nn.LazyLinear(dim),
             nn.LayerNorm(dim),
             nn.ReLU(),
             nn.Linear(dim, 10)
