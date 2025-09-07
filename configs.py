@@ -9,11 +9,16 @@ config = {
     "save_dir": "results",
     'use_amp': True,
     'early_stop_patience': 5,
-    # Ablation Flags
-    'disable_selector': False,          # Use constant (equal) weights instead of learning
-    'random_selector': False,           # Use random weights every forward pass
-    # Logging & Debug
+    'disable_selector': False,
+    'random_selector': False,
     'log_csv': True,
-    'max_epochs_finetune' : 70,
-    'max_epochs_pretrain' : 150
+    'max_epochs_finetune' : 75,
+    'max_epochs_pretrain' : 125,
+    "label_smoothing": 0.2,
+    "mixup_alpha": 0.2,
+    "cutmix_alpha": 1.0,
+    "mix_prob": 0.7,
+    "ema": True, "ema_decay": 0.9999,
+    "tta": True,
+    "warmup_ratio": 0.05,
 }

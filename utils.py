@@ -121,20 +121,20 @@ def estimate_flops_and_latency(model, task, input_shape=(3, 32, 32), device='cpu
     latency = (end - start) / 100
     return flops, latency
 
-# --- Pretrained Partial Loader ---
-def load_pretrained_partial(model, checkpoint_path):
-    if not os.path.exists(checkpoint_path):
-        print(f"Warning: Checkpoint {checkpoint_path} not found. Skipping loading pretrained weights.")
+from torch.nn.parameter import UninitializedParameter
+
+def load_pretrained_partial(model, ckpt_path):
+    if not os.path.exists(ckpt_path):
+        print(f"[WARN] Checkpoint {ckpt_path} not found.")
         return
-
-    pretrained_dict = torch.load(checkpoint_path)
-    model_dict = model.state_dict()
-
-    # Filter out unnecessary keys
-    pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict and v.size() == model_dict[k].size()}
-    model_dict.update(pretrained_dict)
-    model.load_state_dict(model_dict)
-    print(f"Loaded pretrained weights from {checkpoint_path}")
+    print(f"[INFO] Loading checkpoint from {ckpt_path}")
+    try:
+        with torch.serialization.safe_globals([UninitializedParameter]):
+            state = torch.load(ckpt_path, map_location="cpu", weights_only=True)
+    except Exception as e:
+        print(f"[WARN] weights_only load failed ({e}), retrying with weights_only=False")
+        state = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+    model.load_state_dict(state, strict=False)
 
 
 # --- Corruption Loaders ---
