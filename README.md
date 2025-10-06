@@ -1,168 +1,92 @@
-# AutoNorm: Lightweight Meta-Learning for Adaptive Normalization in Transformers
+# AutoNorm: Adaptive Normalization for Transformer Models
 
-Official PyTorch implementation of **AutoNorm**, a meta-learning framework that adaptively selects normalization layers in Transformer architectures via learned gating, supporting both soft and discrete (Gumbel-softmax) norm selection.
+## Introduction
+The `AutoNorm` project introduces and evaluates a novel adaptive normalization mechanism, the `NormSelector`, designed for transformer models. Its primary goal is to dynamically select or combine Dynamic Transformer (DyT) and Layer Normalization (LN) to enhance model performance and robustness across a variety of classification and regression tasks. This approach aims to overcome the limitations of fixed normalization strategies by adapting to input features.
 
----
+## Key Features and Highlights
+*   **NormSelector**: A core innovation that adaptively blends the outputs of DyT and Layer Normalization. It uses a small Multi-Layer Perceptron (MLP) to predict dynamic weights ($w_0, w_1$) such that the output is calculated as $\text{Output} = w_0 \cdot DyT(x) + w_1 \cdot LN(x)$.
+*   **Dynamic Transformer (DyT)**: A simple yet effective learnable scaling mechanism, defined as $DyT(x) = x \odot \alpha$, where $\alpha$ is a learnable parameter.
+*   **Progressive Finetuning**: An efficient two-phase transfer learning strategy involving initial head-only finetuning followed by full model finetuning on downstream tasks.
+*   **Extensive Data Augmentation**: Incorporates advanced techniques such as MixUp, CutMix, and CIFAR-specific augmentations to improve model generalization.
+*   **Regularization Techniques**: Utilizes DropPath (stochastic depth) for improved model robustness and label smoothing to prevent overfitting.
+*   **Model Averaging**: Employs Exponential Moving Average (EMA) for model weights, leading to more stable and generalized performance.
+*   **Test-Time Augmentation (TTA)**: Enhances the robustness of classification predictions by averaging predictions over multiple augmented views of the input.
+*   **Knowledge Distillation**: Supports the training of student models by leveraging the knowledge from a larger, more powerful teacher model.
 
-## 📜 Abstract
+## Project Structure
+The `AutoNorm` project is organized into several modular components, each responsible for a specific aspect of the experimental pipeline:
 
-Normalization is critical for the stability and generalization of deep models, especially in Transformer architectures. Traditional methods such as LayerNorm or DyT assume fixed, hand-designed normalization strategies. We propose **AutoNorm**, a lightweight meta-learning framework that dynamically selects between multiple normalization schemes (e.g., LayerNorm and DyT) per layer and input using a learnable selector. The selector supports both soft weighting and discrete gating via Gumbel-softmax. AutoNorm is designed to be efficient and transferable, enabling fine-tuning or freezing across domains. Additionally, it supports knowledge distillation, robustness testing under corruption, and minimal overhead profiling. Our experiments on MNIST and CIFAR-10 demonstrate that AutoNorm matches or exceeds fixed-norm baselines while maintaining low FLOPs and latency.
+*   [`configs.py`](configs.py): Centralizes all hyperparameters and configuration settings, making experiments reproducible and easy to manage.
+*   [`data.py`](data.py): Manages data loading, preprocessing, and augmentation for diverse datasets, including popular benchmarks like MNIST, CIFAR10, and CaliforniaHousing.
+*   [`model.py`](model.py): Defines the core `TransformerWithAutoNorm` architecture, which seamlessly integrates the `NormSelector`. It also includes essential utility modules such as `DropPath`, `PatchEmbedding`, `DyT`, and `SE` (Squeeze-and-Excitation blocks), along with specialized models for ablation studies (`FrozenDyTTransformer`, `FrozenLNTransformer`).
+*   [`norm_selector.py`](norm_selector.py): Implements the novel `NormSelector` component, detailing how it adaptively combines DyT and LN outputs. It also supports `disable_selector` (LayerNorm only) and `random_selector` modes for comparative analysis.
+*   [`factory.py`](factory.py): Provides a flexible factory pattern for instantiating different model variants, simplifying the setup of various experimental configurations.
+*   [`train.py`](train.py): Encapsulates the training loop, integrating advanced techniques like cosine learning rate scheduling with warmup, MixUp, CutMix, label smoothing, DropPath, Exponential Moving Average (EMA), early stopping, and knowledge distillation.
+*   [`utils.py`](utils.py): Contains a collection of helper functions for various tasks, including evaluation metrics (accuracy, RMSE, MAE), plotting results, performance profiling (FLOPs, latency), checkpoint loading, and generating corrupted test loaders for robustness analysis.
+*   [`main.py`](main.py): The orchestrator of the entire experimental pipeline, handling tasks from pretraining on general datasets (e.g., CIFAR100, CaliforniaHousing) to progressive finetuning on downstream tasks.
 
----
+## Setup and Installation
 
-## 📘 Introduction
+To set up the `AutoNorm` project, follow these steps:
 
-Transformer-based models rely on normalization layers for stabilizing training and accelerating convergence. However, using a fixed normalization scheme like LayerNorm or DyT across all inputs and layers can underperform across domains or tasks.
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/AutoNorm.git
+    cd AutoNorm
+    ```
+    *(Note: Replace `https://github.com/your-username/AutoNorm.git` with the actual repository URL)*
 
-**Key contributions:**
-- A norm selector module trained to blend or choose between norms per layer and sample.
-- Option for Gumbel-softmax gating to enable discrete norm selection.
-- Transfer learning pipeline with freeze/finetune strategies.
-- Evaluation of model robustness against common image corruptions.
-- Profiling of FLOPs and latency to assess overhead.
+2.  **Create a virtual environment (recommended):**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+    ```
 
----
+3.  **Install dependencies:**
+    ```bash
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 # Example for CUDA 11.8, adjust as needed
+    pip install -r requirements.txt
+    ```
+    *(Note: A `requirements.txt` file is assumed to exist with all necessary Python packages. If not, it should be created.)*
 
-## ⚙️ Methodology
+## How to Run Experiments
 
-### 🔁 Norm Selector
+Experiments are orchestrated through the [`main.py`](main.py) script, with configurations managed in [`configs.py`](configs.py).
 
-At each normalization point, we insert a learnable selector that computes:
+1.  **Review Configuration:**
+    Before running an experiment, review and adjust the hyperparameters and settings in [`configs.py`](configs.py) to suit your needs.
 
-\[
-\text{Norm}(x) = \alpha \cdot \text{LayerNorm}(x) + (1 - \alpha) \cdot \text{DyT}(x)
-\]
+2.  **Execute an Experiment:**
+    You can run an experiment using the following command structure:
+    ```bash
+    python main.py --config_name <name_of_your_config>
+    ```
+    For example, to run an experiment configured for CIFAR10:
+    ```bash
+    python main.py --config_name cifar10_autonorm_experiment
+    ```
+    *(Note: Replace `<name_of_your_config>` with the actual configuration name defined in `configs.py`.)*
 
-Where \(\alpha \in [0, 1]\) is a selector weight per sample and layer.
+## Summary of Results
 
-#### Soft Selection (Default)
+The `AutoNorm` project conducted extensive evaluations, comparing `AutoNorm` against `AutoNorm_DisableSelector` (LayerNorm only), `AutoNorm_RandomSelector`, `FrozenDyT` (DyT only), `FrozenLN` (LayerNorm only), and a `Teacher` baseline.
 
-\[
-\alpha = \sigma(w^T h + b)
-\]
+### Classification Tasks (MNIST, CIFAR10, FashionMNIST, SVHN)
+*   **Performance**: `TransformerWithAutoNorm` variants generally outperform the `Teacher` model. However, `AutoNorm` itself is competitive but does not consistently achieve superior performance compared to fixed normalization strategies (e.g., `FrozenDyT`, `FrozenLN`) across all datasets. The optimal normalization strategy appears to be dataset-dependent.
+*   **Robustness**: `AutoNorm` variants showed lower robustness to noise but demonstrated better robustness to rotation compared to the `Teacher` model.
+*   **Efficiency**: FLOPs and Latency were similar across `AutoNorm` variants, but generally higher than the simpler `Teacher` model.
 
-where \(h\) is a hidden state from the norm context and \(\sigma\) is the sigmoid activation.
+### Regression Tasks (EnergyEfficiency)
+*   **Performance**: `TransformerWithAutoNorm` variants performed similarly to each other and consistently outperformed the `Teacher` model. In some cases, fixed normalization strategies yielded marginally better RMSE than `AutoNorm`.
 
-#### Discrete Gating (Optional)
+### Conclusion from Analysis
+The `AutoNorm` project successfully implements and evaluates an adaptive normalization approach. While it demonstrates strong performance compared to a simpler baseline, the adaptive `NormSelector` does not consistently outperform fixed normalization strategies across all tasks and metrics. This suggests that the optimal normalization strategy can be dataset-dependent, and further research into the learning mechanism of `NormSelector` or its application in more complex scenarios might be beneficial.
 
-We use the Gumbel-Softmax trick for hard selection:
+## Future Work and Contributions
+We welcome contributions and suggestions for improving `AutoNorm`. Potential areas for future work include:
+*   Investigating alternative architectures or learning mechanisms for the `NormSelector` to enhance its adaptability.
+*   Exploring the application of `AutoNorm` in more complex transformer models or different domains.
+*   Conducting further ablation studies to understand the individual contributions of each component.
+*   Optimizing the computational efficiency of the `NormSelector`.
 
-\[
-\alpha = \text{GumbelSoftmax}(\mathbf{logits}, \tau, \text{hard=True})
-\]
-
-with temperature \(\tau\) annealed during training. This allows end-to-end differentiable sampling of discrete norm paths.
-
----
-
-### 🔁 Transfer Learning & Knowledge Distillation
-
-We use a two-phase training strategy:
-1. **Pretraining:** AutoNorm is trained on MNIST with cross-entropy loss.
-2. **Transfer:** The pretrained model is transferred to CIFAR-10 using either:
-   - **Freeze:** The selector and early layers are frozen.
-   - **Finetune:** All weights are updated.
-
-Optionally, a **TeacherTransformer** is used to provide soft targets via knowledge distillation.
-
----
-
-## 🔎 Robustness Evaluation
-
-We evaluate the transferability and robustness of AutoNorm on corrupted CIFAR-10 images:
-
-- **Noise:** Additive Gaussian noise
-- **Rotation:** Random affine rotation by ±30°
-
-If corrupted loaders fail to initialize, the result defaults to `None`.
-
----
-
-## 🧪 Experimental Setup
-
-### Datasets
-- **MNIST**: Pretraining dataset
-- **CIFAR-10**: Transfer + robustness evaluation
-
-### Baselines
-| Model              | Description                              |
-|--------------------|------------------------------------------|
-| FrozenDyT          | Uses only DyT, disables LayerNorm        |
-| FrozenLN           | Uses only LayerNorm, disables DyT        |
-| OnlyDyT            | Freezes LayerNorm (auto selector used)   |
-| OnlyLayerNorm      | Freezes DyT (auto selector used)         |
-| Teacher            | Fully trained high-capacity transformer  |
-| AutoNorm           | Ours, soft or Gumbel-based selector      |
-
----
-
-## 📊 Metrics
-
-Each method is evaluated based on:
-- **Validation Accuracy**
-- **Inference Latency (ms/sample)**
-- **FLOPs (per sample)**
-- **Robustness to Noise**
-- **Robustness to Rotation**
-
----
-
-## 📈 Results (Sample)
-
-| Method             | Val Acc | Latency (ms) | FLOPs   | Noise Acc | Rotation Acc |
-|--------------------|---------|--------------|---------|-----------|----------------|
-| AutoNorm-Freeze    | 81.2%   | 1.23         | 5.2M    | 73.1%     | 68.4%          |
-| AutoNorm-Finetune  | 86.1%   | 1.28         | 5.2M    | 79.4%     | 75.4%          |
-| FrozenDyT          | 77.4%   | 1.21         | 4.9M    | 69.5%     | 66.7%          |
-| FrozenLN           | 74.5%   | 1.19         | 4.8M    | 68.0%     | 62.3%          |
-| OnlyDyT            | 75.7%   | 1.21         | 5.0M    | 70.2%     | 63.8%          |
-| OnlyLayerNorm      | 76.3%   | 1.20         | 5.0M    | 69.9%     | 64.4%          |
-| Teacher            | 88.1%   | 1.55         | 8.1M    | 81.4%     | 78.6%          |
-
----
-
-## 🧰 Usage Instructions
-
-### 💾 Install Dependencies
-
-```bash
-pip install torch torchvision matplotlib ptflops tabulate
-```
-
-### Run Pipeline
-```bash
-python main.py
-```
-This runs:
-
-- MNIST pretraining
-
-- CIFAR-10 transfer (freeze & finetune)
-
-- Robustness evaluation
-
-- FLOPs & latency profiling
-
-- Attention and gradient visualizations
-
----
-
-## Output
-All logs and plots are saved under the `logs/` folder:
-```python-repl
-logs/
-├── summary_results.csv
-├── MNIST_Pretrain_accuracy_loss.png
-├── AutoNorm_finetune_grad_heatmap.png
-├── norm_weights_AutoNorm_finetune.pt
-...
-```
-
----
-
-## Limitations
-- Gumbel temperature is fixed; adaptive scheduling could improve results.
-
-- AutoML norm exploration is basic (hardcoded ablations only).
-
-- Selector overhead is not rigorously ablated (basic profiling only).
+Feel free to open issues or submit pull requests!
