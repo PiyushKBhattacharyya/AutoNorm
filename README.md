@@ -4,8 +4,9 @@
 The `AutoNorm` project introduces and evaluates a novel adaptive normalization mechanism, the `NormSelector`, designed for transformer models. Its primary goal is to dynamically select or combine Dynamic Transformer (DyT) and Layer Normalization (LN) to enhance model performance and robustness across a variety of classification and regression tasks. This approach aims to overcome the limitations of fixed normalization strategies by adapting to input features.
 
 ## Key Features and Highlights
-*   **NormSelector**: A core innovation that adaptively blends the outputs of DyT and Layer Normalization. It uses a small Multi-Layer Perceptron (MLP) to predict dynamic weights ($w_0, w_1$) such that the output is calculated as $\text{Output} = w_0 \cdot DyT(x) + w_1 \cdot LN(x)$.
+*   **NormSelector**: A core innovation that adaptively blends the outputs of DyT and Layer Normalization. It uses a small Multi-Layer Perceptron (MLP) to predict dynamic weights ($w_0, w_1$) such that the output is calculated as $\text{Output} = w_0 \cdot DyT(x) + w_1 \cdot LN(x)$. It also supports Gumbel-Softmax for hard selection.
 *   **Dynamic Transformer (DyT)**: A simple yet effective learnable scaling mechanism, defined as $DyT(x) = x \odot \alpha$, where $\alpha$ is a learnable parameter.
+*   **LayerScale**: A regularization technique implemented in `ResidualMLPBlock` to stabilize training and improve performance.
 *   **Progressive Finetuning**: An efficient two-phase transfer learning strategy involving initial head-only finetuning followed by full model finetuning on downstream tasks.
 *   **Extensive Data Augmentation**: Incorporates advanced techniques such as MixUp, CutMix, and CIFAR-specific augmentations to improve model generalization.
 *   **Regularization Techniques**: Utilizes DropPath (stochastic depth) for improved model robustness and label smoothing to prevent overfitting.
@@ -19,7 +20,7 @@ The `AutoNorm` project is organized into several modular components, each respon
 *   [`configs.py`](configs.py): Centralizes all hyperparameters and configuration settings, making experiments reproducible and easy to manage.
 *   [`data.py`](data.py): Manages data loading, preprocessing, and augmentation for diverse datasets, including popular benchmarks like MNIST, CIFAR10, and CaliforniaHousing.
 *   [`model.py`](model.py): Defines the core `TransformerWithAutoNorm` architecture, which seamlessly integrates the `NormSelector`. It also includes essential utility modules such as `DropPath`, `PatchEmbedding`, `DyT`, and `SE` (Squeeze-and-Excitation blocks), along with specialized models for ablation studies (`FrozenDyTTransformer`, `FrozenLNTransformer`).
-*   [`norm_selector.py`](norm_selector.py): Implements the novel `NormSelector` component, detailing how it adaptively combines DyT and LN outputs. It also supports `disable_selector` (LayerNorm only) and `random_selector` modes for comparative analysis.
+*   [`norm_selector.py`](norm_selector.py): Implements the novel `NormSelector` component, detailing how it adaptively combines DyT and LN outputs. It also supports `disable_selector` (LayerNorm only) and `random_selector` modes for comparative analysis, and includes an option for Gumbel-Softmax.
 *   [`factory.py`](factory.py): Provides a flexible factory pattern for instantiating different model variants, simplifying the setup of various experimental configurations.
 *   [`train.py`](train.py): Encapsulates the training loop, integrating advanced techniques like cosine learning rate scheduling with warmup, MixUp, CutMix, label smoothing, DropPath, Exponential Moving Average (EMA), early stopping, and knowledge distillation.
 *   [`utils.py`](utils.py): Contains a collection of helper functions for various tasks, including evaluation metrics (accuracy, RMSE, MAE), plotting results, performance profiling (FLOPs, latency), checkpoint loading, and generating corrupted test loaders for robustness analysis.
