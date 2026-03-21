@@ -1,0 +1,86 @@
+================================================================================
+AUTONORM PAPER REVISION & PROJECT ANALYSIS GUIDE
+================================================================================
+
+This document combines the technical analysis of the AutoNorm codebase with
+the strategic plan and checklist required to address the IJCNN peer reviews.
+
+--------------------------------------------------------------------------------
+PART 1: PROJECT OVERVIEW & ARCHITECTURE (Technical Context)
+--------------------------------------------------------------------------------
+
+The AutoNorm project implements Adaptive Normalization in Transformers.
+Core components in model.py and norm_selector.py:
+
+* NormSelector: A lightweight gating mechanism using an MLP to dynamically
+  blend Dynamic Transformer (DyT) and Layer Normalization (LN). 
+  Formula: Output = w_DyT * DyT(x) + w_LN * LN(x)
+* DyT: A learnable feature scaling (x * alpha).
+* ResidualMLPBlock: Features Post-Norm architecture, LayerScale (init 1e-4),
+  Squeeze-and-Excitation (SE), and DropPath.
+* Training Pipeline (train.py): Includes EMA (Exponential Moving Average),
+  MixUp/CutMix augmentation, and progressive finetuning (head then full).
+
+--------------------------------------------------------------------------------
+PART 2: SUMMARY OF CRITICAL REVIEWER CRITIQUE
+--------------------------------------------------------------------------------
+
+1. Structural Failure: The Results section (IV.A, IV.B, IV.C) is empty text.
+2. Performance Issue: Standard LN (DisableSelector) beats AutoNorm on MNIST,
+   FashionMNIST, and SVHN. Random weights beat AutoNorm on CIFAR-10.
+3. Robustness Concern: Noise/Rotation accuracy is near random chance (10%).
+4. Citation Integrity:
+   - Missing citation for original DyT paper (Zhu et al., CVPR 2025).
+   - Fabricated/unverifiable citation: Reference [30] (S. Liu et al.).
+   - Incorrect citation: RMSNorm citing Fixup paper.
+5. Methodology Gaps: Unclear "Teacher" model and missing architecture details.
+
+--------------------------------------------------------------------------------
+PART 3: STRATEGIC REVISION PLAN
+--------------------------------------------------------------------------------
+
+GOAL: Move from "unfinished draft" to "rigorous research report."
+
+Fix 1: Populate Results Analysis (Section IV)
+- Classification (IV.A): Contrast results across MNIST/CIFAR-10/SVHN.
+  * Discussion: Explain that for simpler datasets, standard LN is already optimal.
+  * Discussion: Acknowledge that the NormSelector may require more epochs or 
+    different hyperparameters to consistently beat random weighting on CIFAR-10.
+- Regression (IV.B): Explain why Transformer variants significantly beat the
+  simple Teacher baseline but show little difference from standard LN.
+- NLP (IV.C): Highlight the PTB performance as the primary success of AutoNorm.
+
+Fix 2: Restore Academic Integrity
+- Add Zhu et al. (CVPR 2025) to bibliography and text.
+- Replace RMSNorm citation (Ref [8]) with Biao Zhang & Rico Sennrich (2019).
+- Remove or find a verifiable source for Ref [30].
+
+Fix 3: Clarify Architecture and Baselines
+- State model details: 12 Layers, 1 Head, 128 Hidden Dim.
+- Define "Teacher" as a primitive baseline used to show task-level complexity.
+
+--------------------------------------------------------------------------------
+PART 4: ACTIONABLE CHECKLIST
+--------------------------------------------------------------------------------
+
+[MAJOR]
+- [ ] Section IV.A: Write 2-3 paragraphs for image tasks.
+- [ ] Section IV.B: Write 1-2 paragraphs for tabular regression.
+- [ ] Section IV.C: Write 2 paragraphs for PTB results.
+- [ ] Add DyT Citation (Zhu et al., 2025).
+- [ ] Update RMSNorm Citation reference.
+- [ ] Remove/Fix Reference [30].
+
+[TECHNICAL]
+- [ ] List Layers (12), Heads (1), Dim (128) in Section III.
+- [ ] Explain why Noise/Rotation accuracy is ~10% (Suspected bug or high noise).
+- [ ] Explain Teacher model in Section III/IV.
+
+[READABILITY]
+- [ ] Add BN small batch size degradation citation.
+- [ ] Re-check all cross-references (\ref and \cite).
+
+================================================================================
+DOCUMENT UPDATED: 2026-03-21
+RESOURCES MERGED: analysis_report.md, implementation_plan.md, checklist.md
+================================================================================
