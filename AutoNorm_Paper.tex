@@ -249,7 +249,13 @@ To assess the effect of adaptive weighting, two control modes are introduced:
 \end{itemize}
 This design provides flexibility, allowing the model to adjust normalization behavior in response to varying input distributions.
 
-\subsection{Transformer with AutoNorm Architecture}
+\subsection{Model Architecture and Hyperparameters}
+The \textbf{TransformerWithAutoNorm} architecture is composed of a stack of 12 identical residual blocks ($Depth=12$) with a hidden feature dimension of $D=128$. Each block follows a Post-Norm structure incorporating a Multi-Layer Perceptron (MLP) with GELU activation, Squeeze-and-Excitation (SE) modules for channel-wise recalibration \cite{hu2018squeeze}, and LayerScale \cite{bachlechner2020rezero} initialization ($10^4$) to stabilize early training. Stochastic depth \cite{jang2017gumbelsoftmax} with a drop-path rate of 0.1 is applied across the layers.
+
+For image-based tasks, a patch embedding layer ($PatchSize=4$) and 2D-interpolated positional embeddings are utilized to map inputs into the latent space. Classification is performed using a single attention head or global average pooling followed by a task-specific linear head.
+
+\subsection{Baseline: The Teacher Model}
+To establish a reference point for the difficulty of each task, a lightweight \textbf{Teacher} model is included in our comparative study. This baseline is a simple two-layer Multi-Layer Perceptron (MLP) without attention or adaptive normalization mechanisms. Its primary role is to provide a non-transformer performance bound and serve as an auxiliary signal during the initial knowledge distillation phase of training \cite{hinton2015distilling}.
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.45\textwidth]{figs/autoNorm.png}
