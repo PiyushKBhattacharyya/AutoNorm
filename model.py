@@ -43,6 +43,21 @@ class DyT(nn.Module):
         return torch.tanh(x * self.alpha)
 
 
+class RMSNorm(nn.Module):
+    """Root Mean Square Layer Normalization (Zhang & Sennrich, 2019)."""
+    def __init__(self, dim: int, eps: float = 1e-6):
+        super().__init__()
+        self.eps = eps
+        self.weight = nn.Parameter(torch.ones(dim))
+
+    def _norm(self, x):
+        return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
+
+    def forward(self, x):
+        output = self._norm(x.float()).type_as(x)
+        return output * self.weight
+
+
 class SE(nn.Module):
     """Squeeze-and-Excitation on channel dimension for token features."""
     def __init__(self, dim: int, reduction: int = 4):
@@ -137,7 +152,8 @@ class TransformerWithAutoNorm(nn.Module):
             "SVHN": nn.Linear(dim, 10),
             "CaliforniaHousing": nn.Linear(dim, 1),
             "EnergyEfficiency": nn.Linear(dim, 2),
-            "PTB": nn.Linear(dim, 45)  # 45 POS tags for Penn TreeBank
+            "PTB": nn.Linear(dim, 45),  # 45 POS tags for Penn TreeBank
+            "BaselineMLP": nn.Linear(dim, 10) # Generic labeling
         })
 
     def _image_forward(self, x):
@@ -189,7 +205,7 @@ class TransformerWithAutoNorm(nn.Module):
         if task not in self.heads:
             raise ValueError(f"Task '{task}' not found in model heads. Available: {list(self.heads.keys())}")
         return self.heads[task](x)
-class TeacherTransformer(nn.Module):
+class BaselineMLPTransformer(nn.Module):
     def __init__(self, input_dim=784, dim=128):
         super().__init__()
         self.net = nn.Sequential(
@@ -202,6 +218,16 @@ class TeacherTransformer(nn.Module):
     def forward(self, x, task=None):
         x = x.view(x.size(0), -1)
         return self.net(x)
+
+
+class FrozenRMSNormTransformer(TransformerWithAutoNorm):
+    def __init__(self, input_dim=784, dim=128):
+        super().__init__(input_dim=input_dim, dim=dim)
+        # Replace normalizers with RMSNorm
+        self.ln = RMSNorm(dim)
+        self.dyt = RMSNorm(dim) # For baseline purposes
+        for p in self.dyt.parameters():
+            p.requires_grad = False
 
 
 class FrozenDyTTransformer(TransformerWithAutoNorm):

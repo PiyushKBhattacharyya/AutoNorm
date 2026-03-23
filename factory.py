@@ -1,4 +1,4 @@
-from model import TransformerWithAutoNorm, FrozenDyTTransformer, FrozenLNTransformer, TeacherTransformer
+from model import TransformerWithAutoNorm, FrozenDyTTransformer, FrozenLNTransformer, BaselineMLPTransformer, FrozenRMSNormTransformer
 
 # Common dataset heads configuration
 MODEL_INPUT_DIM = 3072  # for CIFAR10-like data; regression datasets will still work after flatten
@@ -26,8 +26,11 @@ def make_frozen_dyt():
 def make_frozen_ln():
     return FrozenLNTransformer(input_dim=MODEL_INPUT_DIM)
 
-def make_teacher():
-    return TeacherTransformer(input_dim=MODEL_INPUT_DIM)
+def make_baseline_mlp():
+    return BaselineMLPTransformer(input_dim=MODEL_INPUT_DIM)
+
+def make_frozen_rms():
+    return FrozenRMSNormTransformer(input_dim=MODEL_INPUT_DIM)
 
 def make_only_dyt():
     model = TransformerWithAutoNorm(input_dim=MODEL_INPUT_DIM, disable_selector=False, random_selector=False)
@@ -47,5 +50,6 @@ model_variants = {
     "AutoNorm_RandomSelector": make_autonorm_random,
     "FrozenDyT": make_frozen_dyt,
     "FrozenLN": make_frozen_ln,
-    "Teacher": make_teacher
+    "FrozenRMS": make_frozen_rms,
+    "BaselineMLP": make_baseline_mlp
 }
