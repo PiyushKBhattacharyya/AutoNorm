@@ -232,42 +232,9 @@ For our experimental evaluation, we utilize a standardized Transformer architect
 
 The \textbf{TransformerWithAutoNorm} architecture, as illustrated in Figure \ref{fig:Autonorm}, integrates the NormSelector module directly into the residual pathways. By adaptively blending LayerNorm and DyT based on input activations, AutoNorm provides a specialized inductive bias that is otherwise missing in static normalization hierarchies.
 
-% MOVED TABLE III HERE
-\begin{table*}[ht]
-\centering
-\caption{Performance Comparison of AutoNorm and Baselines on Penn TreeBank (PTB) POS Tagging task.}
-\label{tab:ptb_nlp}
-\resizebox{\textwidth}{!}{
-\begin{tabular}{lccccccccccc}
-\toprule
-\textbf{Method} &
-\textbf{Train Acc} &
-\textbf{Val Acc} &
-\textbf{Train Loss} &
-\textbf{Val Loss} &
-\textbf{Precision} &
-\textbf{Recall} &
-\textbf{F1} &
-\textbf{Perplexity} &
-\textbf{Latency (s)} &
-\textbf{FLOPs} \\
-\midrule
-
-AutoNorm-PTB &
-\textbf{98.12} & \textbf{97.42} &
-\textbf{0.082} & \textbf{0.121} &
-\textbf{97.10} & \textbf{97.21} & \textbf{97.15} &
-\textbf{38.6 $\pm$ 0.5} & 0.00410 & 1,687,680 \\
-
-AutoNorm\_DisableSelector-PTB &
-97.55 & 96.88 &
-0.103 & 0.143 &
-96.54 & 96.63 & 96.58 &
-40.2 $\pm$ 0.4 & 0.00389 & 1,679,104 \\
-
-AutoNorm\_RandomSelector-PTB &
-97.41 & 96.75 &
-0.111 & 0.149 &
+% -----------------------------------------------------------
+% NLP Results Table (PTB and SST-2)
+% -----------------------------------------------------------
 \begin{table*}[ht]
 \centering
 \caption{Performance Comparison of AutoNorm and Baselines on Penn TreeBank (PTB) and SST-2 tasks.}
