@@ -39,7 +39,8 @@ class DyT(nn.Module):
         self.alpha = nn.Parameter(torch.ones(1, dim))
 
     def forward(self, x):
-        return x * self.alpha
+        # Updated to tanh-based nonlinear operation as per original DyT paper (Zhu et al. 2025)
+        return torch.tanh(x * self.alpha)
 
 
 class SE(nn.Module):
@@ -135,7 +136,8 @@ class TransformerWithAutoNorm(nn.Module):
             "CIFAR100": nn.Linear(dim, 100),
             "SVHN": nn.Linear(dim, 10),
             "CaliforniaHousing": nn.Linear(dim, 1),
-            "EnergyEfficiency": nn.Linear(dim, 2)
+            "EnergyEfficiency": nn.Linear(dim, 2),
+            "PTB": nn.Linear(dim, 45)  # 45 POS tags for Penn TreeBank
         })
 
     def _image_forward(self, x):
