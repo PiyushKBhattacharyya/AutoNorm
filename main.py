@@ -126,7 +126,8 @@ def main():
         "SVHN": {"type": "classification", "finetune": True},
         "CaliforniaHousing": {"type": "regression", "pretrain": True},
         "EnergyEfficiency": {"type": "regression", "finetune": True},
-        "PTB": {"type": "classification", "finetune": True}
+        "PTB": {"type": "classification", "finetune": True},
+        "SST2": {"type": "classification", "finetune": True}
     }
 
     classification_results = []

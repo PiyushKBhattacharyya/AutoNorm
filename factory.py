@@ -45,11 +45,12 @@ def make_only_ln():
     return model
 
 model_variants = {
-    "AutoNorm": make_autonorm,
-    "AutoNorm_DisableSelector": make_autonorm_disabled,
-    "AutoNorm_RandomSelector": make_autonorm_random,
-    "FrozenDyT": make_frozen_dyt,
-    "FrozenLN": make_frozen_ln,
-    "FrozenRMS": make_frozen_rms,
-    "BaselineMLP": make_baseline_mlp
+    "AutoNorm": lambda **kwargs: TransformerWithAutoNorm(is_cifar=kwargs.get('is_cifar', True)),
+    "AutoNorm_DisableSelector": lambda **kwargs: TransformerWithAutoNorm(is_cifar=kwargs.get('is_cifar', True), disable_selector=True),
+    "AutoNorm_RandomSelector": lambda **kwargs: TransformerWithAutoNorm(is_cifar=kwargs.get('is_cifar', True), random_selector=True),
+    "FrozenDyT": lambda **kwargs: FrozenDyTTransformer(is_cifar=kwargs.get('is_cifar', True)),
+    "FrozenLN": lambda **kwargs: FrozenLNTransformer(is_cifar=kwargs.get('is_cifar', True)),
+    "FrozenRMS": lambda **kwargs: TransformerWithAutoNorm(is_cifar=kwargs.get('is_cifar', True), use_rms_only=True),
+    "AdaNorm": lambda **kwargs: TransformerWithAutoNorm(is_cifar=kwargs.get('is_cifar', True), force_normalization='adanorm'),
+    "FiLM": lambda **kwargs: TransformerWithAutoNorm(is_cifar=kwargs.get('is_cifar', True), force_normalization='film'),
 }

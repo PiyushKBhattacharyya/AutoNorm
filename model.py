@@ -43,19 +43,27 @@ class DyT(nn.Module):
         return torch.tanh(x * self.alpha)
 
 
-class RMSNorm(nn.Module):
-    """Root Mean Square Layer Normalization (Zhang & Sennrich, 2019)."""
-    def __init__(self, dim: int, eps: float = 1e-6):
+class AdaNorm(nn.Module):
+    """Adaptive Normalization (simplified for comparison)."""
+    def __init__(self, dim):
         super().__init__()
-        self.eps = eps
-        self.weight = nn.Parameter(torch.ones(dim))
-
-    def _norm(self, x):
-        return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
+        self.scale = nn.Parameter(torch.ones(1, dim))
+        self.bias = nn.Parameter(torch.zeros(1, dim))
+        self.ln = nn.LayerNorm(dim, elementwise_affine=False)
 
     def forward(self, x):
-        output = self._norm(x.float()).type_as(x)
-        return output * self.weight
+        return self.ln(x) * self.scale + self.bias
+
+
+class FiLM(nn.Module):
+    """Feature-wise Linear Modulation."""
+    def __init__(self, dim):
+        super().__init__()
+        self.gamma = nn.Parameter(torch.ones(1, dim))
+        self.beta = nn.Parameter(torch.zeros(1, dim))
+
+    def forward(self, x):
+        return x * self.gamma + self.beta
 
 
 class SE(nn.Module):
@@ -111,7 +119,9 @@ class TransformerWithAutoNorm(nn.Module):
                  is_cifar=False,
                  patch_size=4,
                  drop_path_rate=0.1,
-                 dropout=0.1):
+                 dropout=0.1,
+                 force_normalization=None,
+                 use_rms_only=False):
         super().__init__()
         self.is_cifar = is_cifar
         self.dim = dim
@@ -136,6 +146,17 @@ class TransformerWithAutoNorm(nn.Module):
             random_selector=random_selector
         )
 
+        # Force normalization variant if requested
+        self.force_normalization = force_normalization
+        if force_normalization == 'adanorm':
+            self.forced_norm_layer = AdaNorm(dim)
+        elif force_normalization == 'film':
+            self.forced_norm_layer = FiLM(dim)
+        elif use_rms_only:
+            self.forced_norm_layer = RMSNorm(dim)
+        else:
+            self.forced_norm_layer = None
+
         # Stochastic depth schedule
         dprates = [drop_path_rate * i / float(max(1, depth - 1)) for i in range(depth)] if depth > 1 else [0.0]
 
@@ -153,7 +174,7 @@ class TransformerWithAutoNorm(nn.Module):
             "CaliforniaHousing": nn.Linear(dim, 1),
             "EnergyEfficiency": nn.Linear(dim, 2),
             "PTB": nn.Linear(dim, 45),  # 45 POS tags for Penn TreeBank
-            "BaselineMLP": nn.Linear(dim, 10) # Generic labeling
+            "SST2": nn.Linear(dim, 2)   # 2 binary sentiment classes
         })
 
     def _image_forward(self, x):
@@ -189,9 +210,12 @@ class TransformerWithAutoNorm(nn.Module):
         else:
             x = self._vector_forward(x)
 
-        dyt_out = self.dyt(x)
-        ln_out = self.ln(x)
-        x = self.norm_selector(x, ln_out, dyt_out)
+        if self.forced_norm_layer is not None:
+            x = self.forced_norm_layer(x)
+        else:
+            dyt_out = self.dyt(x)
+            ln_out = self.ln(x)
+            x = self.norm_selector(x, ln_out, dyt_out)
 
         for blk in self.blocks:
             x = blk(x)
