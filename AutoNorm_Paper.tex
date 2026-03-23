@@ -95,7 +95,7 @@ Formally, Layer Normalization for a feature tensor $X \in \mathbb{R}^{B \times N
 \text{LN}(X) = \gamma \odot \frac{X - \mathbb{E}[X]}{\sqrt{\text{Var}[X] + \epsilon}} + \beta
 \]
 
-where $\gamma$ and $\beta$ are trainable parameters. Dynamic Transformer Normalization (DyT) simplifies this process by applying a learned scaling $\alpha$, such that:
+where $\gamma$ and $\beta$ are trainable parameters. Dynamic Transformer Normalization (DyT) \cite{zhu2025transformers} simplifies this process by applying a learned scaling $\alpha$, such that:
 
 \[
 \text{DyT}(X) = X \odot \alpha
@@ -137,7 +137,7 @@ IN, introduced by Ulyanov et al.\\ \cite{ulyanov2016instance}, normalizes across
 Wu and He \cite{wu2018group} proposed GN to address BN's batch-size dependency. GN divides channels into groups and normalizes within each group. It maintains stable performance across small and large batch sizes, but requires careful selection of group numbers.
 
 \subsubsection{Root Mean Square Layer Normalization (RMSNorm)}
-Zhang and Sennrich \cite{zhang2019fixup} introduced RMSNorm, which regularizes the summed inputs to a neuron using the root mean square (RMS) statistic alone. RMSNorm is computationally simpler and more efficient than traditional LayerNorm, achieving comparable performance while reducing running time by 7\%–64\% across different models.
+Zhang and Sennrich \cite{zhang2019root} introduced RMSNorm, which regularizes the summed inputs to a neuron using the root mean square (RMS) statistic alone. RMSNorm is computationally simpler and more efficient than traditional LayerNorm, achieving comparable performance while reducing running time by 7\%–64\% across different models.
 
 \subsubsection{Adaptive Batch Normalization (AdaBN)}
 Li et al. \cite{li2018adaptive} proposed AdaBN to increase the generalizability of deep neural networks. By modulating the statistics in all Batch Normalization layers across the network, AdaBN achieves deep adaptation effects for domain adaptation tasks, enhancing model transferability to different domains.
@@ -475,8 +475,8 @@ G. Hinton, O. Vinyals, and J. Dean, ``Distilling the knowledge in a neural netwo
 \bibitem{shazeer2017outrageously}
 N. Shazeer et al., ``Outrageously large neural networks: The mixture-of-experts layer,'' in \textit{Proc. ICLR}, 2017.
 
-\bibitem{liu2024routers}
-S. Liu et al., ``Adaptive routers for dynamic normalization,'' \textit{Technical Report}, 2024.
+\bibitem{zhu2025transformers}
+L. Zhu et al., ``Transformers without normalization,'' in \textit{Proc. CVPR}, 2025.
 
 \end{thebibliography}
 
